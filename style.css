@@ -22,14 +22,14 @@ body {
 .section {
     background-color: #ffffff;
     padding: 50px 30px;
-    border: 1.5px solid #b2b2b2;
+    border: 1.5px solid #49a8f5;
     border-radius: 0.25em;
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
 }
 
 #my-qr-reader {
     padding: 20px !important;
-    border: 1.5px solid #b2b2b2 !important;
+    border: 1.5px solid #49a8f5 !important;
     border-radius: 8px;
 }
 
@@ -44,7 +44,7 @@ body {
 
 button {
     padding: 10px 20px;
-    border: 1px solid #b2b2b2;
+    border: 1px solid #49a8f5;
     outline: none;
     border-radius: 0.25em;
     color: white;
@@ -67,6 +67,6 @@ button:hover {
 
 video {
     width: 100% !important;
-    border: 1px solid #b2b2b2 !important;
+    border: 1px solid #49a8f5 !important;
     border-radius: 0.25em;
 }

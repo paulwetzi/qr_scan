@@ -13,14 +13,34 @@ function domReady(fn) {
 
 domReady(function () {
 
-    // If found you qr code
-    function onScanSuccess(decodeText, decodeResult) {
-        alert("You Qr is : " + decodeText, decodeResult);
-    }
+  const x = getElementById("demo");
 
-    let htmlscanner = new Html5QrcodeScanner(
-        "my-qr-reader",
-        { fps: 10, qrbox: 250 }
-    );
-    htmlscanner.render(onScanSuccess);
+  function getLocation() { 
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(success, error);
+    } else {
+      x.innerHTML = "Geolocation is not supported by this Browser.";
+    }
+  }
+
+  function success(position){
+    x.innerHTML = "Laititude: " + position.coords.latitude + 
+    "<br>Longitude: " + position.coords.longitude;
+  }
+
+  function error(){
+    alert("Sorry, no position avaible.");
+  }
+
+  // If found you qr code
+  function onScanSuccess(decodeText, decodeResult) {
+      alert("You Qr is : " + decodeText, decodeResult);
+      getLocation()
+  }
+
+  let htmlscanner = new Html5QrcodeScanner(
+      "my-qr-reader",
+      { fps: 10, qrbox: 250 }
+  );
+  htmlscanner.render(onScanSuccess);
 });
