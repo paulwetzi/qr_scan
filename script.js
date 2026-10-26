@@ -20,7 +20,7 @@ domReady(function () {
 
     let htmlscanner = new Html5QrcodeScanner(
         "my-qr-reader",
-        { fps: 10, qrbos: 250 }
+        { fps: 10, qrbox: 250 }
     );
     htmlscanner.render(onScanSuccess);
 });
