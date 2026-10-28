@@ -4,7 +4,7 @@ window.QR_SCAN_CONFIG = {
     sheetUrl: "",
 
     // Muss mit TOKEN in apps-script/Code.gs übereinstimmen.
-    token: "",
+    token: "HIER-EIN-GEHEIMES-WORT-EINTRAGEN",
 
     // Dasselbe Auto wird innerhalb dieser Zeit nicht nochmal gespeichert (Sekunden).
     cooldownSeconds: 20
