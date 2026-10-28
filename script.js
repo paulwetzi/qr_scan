@@ -37,7 +37,8 @@ async function sendScan(scan) {
 
     const payload = {
         id: scan.id,
-        fahrzeugCode: scan.code,
+        fin: scan.vin || null,
+        qrInhalt: scan.raw || scan.code,
         latitude: scan.latitude,
         longitude: scan.longitude,
         genauigkeitMeter: scan.accuracy,
@@ -92,6 +93,18 @@ function getPosition() {
     });
 }
 
+// ---------- FIN aus dem QR-Inhalt lesen ----------
+// QR-Codes an den Fahrzeugen enthalten Links wie
+// https://www.schuster-gruppe.de/fahrzeuge/VIN_VF7VFEHZ8M7835240_detail
+// Eine FIN hat 17 Zeichen, ohne I, O und Q.
+
+function extractVin(text) {
+    const fromUrl = text.match(/VIN_([A-HJ-NPR-Z0-9]{17})(?![A-Z0-9])/i);
+    if (fromUrl) return fromUrl[1].toUpperCase();
+    const plain = text.match(/(?:^|[^A-Z0-9])([A-HJ-NPR-Z0-9]{17})(?![A-Z0-9])/i);
+    return plain ? plain[1].toUpperCase() : null;
+}
+
 // ---------- Ablauf eines Scans ----------
 
 let current = null;
@@ -136,18 +149,26 @@ function onScanSuccess(decodedText) {
     if (current) return; // es läuft schon ein Scan
     scanner.pause(true);
 
+    const raw = decodedText.trim();
+    const vin = extractVin(raw);
+
     current = {
         id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
-        code: decodedText.trim(),
+        vin: vin,
+        raw: raw,
+        code: vin || raw,
         scannedAt: new Date().toISOString(),
         note: "",
         sent: false
     };
 
     $("r-code").textContent = current.code;
+    if (!vin) {
+        setStatus("Keine FIN im QR-Code gefunden – ist das ein Fahrzeug-Code?", "warn");
+    }
     $("r-note").value = "";
     $("result").hidden = false;
-    setStatus("");
+    if (vin) setStatus("");
     if (navigator.vibrate) navigator.vibrate(100);
 
     locateCurrent();
