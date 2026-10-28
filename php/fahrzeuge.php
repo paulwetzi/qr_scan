@@ -2,7 +2,7 @@
 // Beispiel: Fahrzeugstandorte aus dem Google Sheet abrufen und als Tabelle anzeigen.
 // URL und Token müssen zu config.js / apps-script/Code.gs passen.
 
-$sheetUrl = 'https://script.google.com/macros/s/DEINE-ID/exec';
+$sheetUrl = 'https://script.google.com/macros/s/AKfycbwWOFG_skftCNEmb-8sf8p37yRHdUvK8Co0Y8nq1sFfEk5A3eDYXupWuUC2jngg2gQL/exec';
 $token    = 'HIER-EIN-GEHEIMES-WORT-EINTRAGEN';
 
 function holeFahrzeuge(string $url, string $token): array
