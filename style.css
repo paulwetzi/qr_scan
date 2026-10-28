@@ -7,7 +7,7 @@ body {
     height: 100vh;
     box-sizing: border-box;
     text-align: center;
-    background: rgb(128 0 0 / 66%);
+    background: rgba(25, 128, 246, 0.66);
 }
 .container {
     width: 100%;
