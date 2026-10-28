@@ -34,10 +34,41 @@ function storeScans() {
 let scans = loadScans();
 
 // ---------- FIN aus dem QR-Inhalt ----------
-// QR-Codes enthalten Links wie .../fahrzeuge/VIN_VF7VFEHZ8M7835240_detail
+// QR-Aufkleber enthalten den IMS-Link mit Base64-kodierter FIN (fgstnr) und Auto-ID (autoid).
+// Zusätzlich werden Links wie .../fahrzeuge/VIN_<FIN>_detail und reine FINs erkannt.
 // Eine FIN hat 17 Zeichen, ohne I, O und Q.
 
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/i;
+
+function decodeBase64(value) {
+    try {
+        let s = String(value).trim().replace(/-/g, "+").replace(/_/g, "/").replace(/ /g, "+");
+        while (s.length % 4) s += "=";
+        return atob(s).trim();
+    } catch (e) {
+        return null;
+    }
+}
+
+// IMS-Aufkleber: .../qr-analyze.php?autoid=<base64>&fgstnr=<base64>
+function readImsParams(text) {
+    let url;
+    try {
+        url = new URL(text);
+    } catch (e) {
+        return null;
+    }
+    const fg = url.searchParams.get("fgstnr");
+    if (!fg) return null;
+    let vin = decodeBase64(fg);
+    if (!vin || !VIN_RE.test(vin)) vin = VIN_RE.test(fg.trim()) ? fg.trim() : null;
+    if (!vin) return null;
+    return vin.toUpperCase();
+}
+
 function extractVin(text) {
+    const ims = readImsParams(text);
+    if (ims) return ims;
     const fromUrl = text.match(/VIN_([A-HJ-NPR-Z0-9]{17})(?![A-Z0-9])/i);
     if (fromUrl) return fromUrl[1].toUpperCase();
     const plain = text.match(/(?:^|[^A-Z0-9])([A-HJ-NPR-Z0-9]{17})(?![A-Z0-9])/i);

@@ -34,6 +34,21 @@ try {
     exit(htmlspecialchars($e->getMessage()));
 }
 
+// Auto-ID aus dem IMS-Link im QR-Code lesen (autoid ist Base64-kodiert)
+function autoIdAusLink(?string $link): ?string
+{
+    if (!$link) return null;
+    parse_str((string)parse_url($link, PHP_URL_QUERY), $q);
+    if (empty($q['autoid'])) return null;
+    $id = base64_decode(strtr(str_replace(' ', '+', $q['autoid']), '-_', '+/'), true);
+    return ($id !== false && ctype_digit(trim($id))) ? trim($id) : null;
+}
+
+foreach ($fahrzeuge as &$f) {
+    $f['autoId'] = autoIdAusLink($f['link'] ?? null);
+}
+unset($f);
+
 // Neueste zuerst
 usort($fahrzeuge, fn($a, $b) => strcmp($b['zuletztGescannt'], $a['zuletztGescannt']));
 
@@ -54,10 +69,11 @@ $e = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 <body>
 <h1>Fahrzeugstandorte (<?= count($fahrzeuge) ?>)</h1>
 <table>
-    <tr><th>FIN</th><th>Zuletzt gescannt</th><th>Genauigkeit</th><th>Standort</th></tr>
+    <tr><th>Auto-ID</th><th>FIN</th><th>Zuletzt gescannt</th><th>Genauigkeit</th><th>Standort</th></tr>
     <?php foreach ($fahrzeuge as $f): ?>
         <tr>
-            <td class="fin"><a href="<?= $e($f['link']) ?>" target="_blank"><?= $e($f['fin']) ?></a></td>
+            <td><?= $e($f['autoId'] ?? '–') ?></td>
+            <td class="fin"><?= $e($f['fin']) ?></td>
             <td><?= $e(date('d.m.Y H:i', strtotime($f['zuletztGescannt']))) ?></td>
             <td><?= $f['genauigkeit'] !== null ? '± ' . $e($f['genauigkeit']) . ' m' : '–' ?></td>
             <td><a href="<?= $e($f['karte']) ?>" target="_blank">Karte</a></td>
