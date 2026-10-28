@@ -1,35 +1,51 @@
-/* style.css file*/
+/* Fahrzeug-Scanner */
+:root {
+    --blue: #1980f6;
+    --blue-light: #49a8f5;
+    --ok: #16803c;
+    --warn: #b45309;
+    --text: #1f2937;
+    --muted: #6b7280;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     display: flex;
     justify-content: center;
     margin: 0;
     padding: 0;
-    height: 100vh;
-    box-sizing: border-box;
-    text-align: center;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
     background: rgba(25, 128, 246, 0.66);
 }
+
 .container {
     width: 100%;
     max-width: 500px;
-    margin: 5px;
+    margin: 5px 16px 24px;
 }
 
 .container h1 {
     color: #ffffff;
+    text-align: center;
 }
 
 .section {
     background-color: #ffffff;
-    padding: 50px 30px;
-    border: 1.5px solid #49a8f5;
-    border-radius: 0.25em;
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    border: 1.5px solid var(--blue-light);
+    border-radius: 8px;
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
 }
 
 #my-qr-reader {
-    padding: 20px !important;
-    border: 1.5px solid #49a8f5 !important;
+    padding: 12px !important;
+    border: 1.5px solid var(--blue-light) !important;
     border-radius: 8px;
 }
 
@@ -42,31 +58,159 @@ body {
     height: 100px !important;
 }
 
-button {
-    padding: 10px 20px;
-    border: 1px solid #49a8f5;
-    outline: none;
-    border-radius: 0.25em;
-    color: white;
-    font-size: 15px;
-    cursor: pointer;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    background-color: #008000ad;
-    transition: 0.3s background-color;
-}
-
-button:hover {
-    background-color: #008000;
-}
-
 #html5-qrcode-anchor-scan-type-change {
     text-decoration: none !important;
-    color: #1d9bf0;
+    color: var(--blue);
 }
 
 video {
     width: 100% !important;
-    border: 1px solid #49a8f5 !important;
-    border-radius: 0.25em;
+    border-radius: 6px;
+}
+
+button {
+    padding: 10px 16px;
+    border: 1px solid var(--blue);
+    border-radius: 6px;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 12px;
+    background-color: var(--blue);
+    transition: 0.2s opacity;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+button.secondary {
+    background: #ffffff;
+    color: var(--blue);
+}
+
+/* Ergebnis eines Scans */
+.result {
+    margin-top: 16px;
+    text-align: left;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.label {
+    color: var(--muted);
+}
+
+.value {
+    font-weight: 600;
+    word-break: break-all;
+    text-align: right;
+}
+
+.result input {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.warn {
+    color: var(--warn);
+}
+
+.status {
+    margin: 12px 0 0;
+    text-align: center;
+    min-height: 1.2em;
+}
+
+.status.ok {
+    color: var(--ok);
+}
+
+.status.warn {
+    color: var(--warn);
+}
+
+/* Verlauf */
+.history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-head h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.history-head button {
+    margin-top: 0;
+}
+
+#history {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+}
+
+#history li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+#history li span:not(.badge) {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+#history li a {
+    color: var(--blue);
+    font-size: 14px;
+    text-align: right;
+}
+
+#history li.empty {
+    display: block;
+    color: var(--muted);
+}
+
+.badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    justify-self: end;
+}
+
+.badge.ok {
+    background: #dcfce7;
+    color: var(--ok);
+}
+
+.badge.pending {
+    background: #fef3c7;
+    color: var(--warn);
 }

@@ -1,31 +1,47 @@
-<!-- Index.html file -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet"
-          href="style.css">
-    <title>QR Code Scanner / Reader
-    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Fahrzeug-Scanner</title>
 </head>
 
 <body>
     <div class="container">
-        <h1>Scan QR Codes</h1>
+        <h1>Fahrzeug scannen</h1>
+
         <div class="section">
-            <div id="my-qr-reader">
+            <div id="my-qr-reader"></div>
+
+            <div id="result" class="result" hidden>
+                <div class="row"><span class="label">Fahrzeug</span><span id="r-code" class="value"></span></div>
+                <div class="row"><span class="label">Standort</span><span id="r-pos" class="value">wird ermittelt …</span></div>
+                <div class="row"><span class="label">Genauigkeit</span><span id="r-acc" class="value">–</span></div>
+                <p id="r-warn" class="warn" hidden></p>
+                <input id="r-note" type="text" placeholder="Notiz, z. B. Stellplatz B12 (optional)">
+                <div class="actions">
+                    <button id="btn-save" disabled>Speichern</button>
+                    <button id="btn-retry-pos" class="secondary">Standort neu</button>
+                    <button id="btn-cancel" class="secondary">Verwerfen</button>
+                </div>
             </div>
-            <div>
-              <p id="demo"></p>
+
+            <p id="status" class="status"></p>
+        </div>
+
+        <div class="section history">
+            <div class="history-head">
+                <h2>Letzte Scans</h2>
+                <button id="btn-resend" class="secondary" hidden>Offene senden</button>
             </div>
+            <ul id="history"></ul>
         </div>
     </div>
-    <script
-        src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
-    </script>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 
