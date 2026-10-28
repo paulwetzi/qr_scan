@@ -98,19 +98,22 @@ function feedback(text) {
 const recent = new Map(); // FIN -> Zeitpunkt des letzten Scans
 
 async function onScan(decodedText) {
-    const vin = extractVin(decodedText.trim());
-    if (!vin) return; // kein Fahrzeug-Code -> ignorieren
+    const raw = String(decodedText || "").trim();
+    if (!raw) return;
+
+    // FIN aus dem Link, sonst der ganze QR-Inhalt als Kennung
+    const key = extractVin(raw) || raw;
 
     const now = Date.now();
-    if (recent.has(vin) && now - recent.get(vin) < COOLDOWN_MS) return;
-    recent.set(vin, now);
+    if (recent.has(key) && now - recent.get(key) < COOLDOWN_MS) return;
+    recent.set(key, now);
 
-    feedback("✓ " + vin);
+    feedback("✓ " + (key.length > 40 ? key.slice(0, 40) + "…" : key));
 
     const scan = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(now) + Math.random(),
-        vin: vin,
-        link: decodedText.trim(),
+        id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(now) + "-" + Math.random().toString(36).slice(2),
+        vin: key,
+        link: raw,
         scannedAt: new Date().toISOString(),
         latitude: null,
         longitude: null,
