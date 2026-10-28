@@ -253,7 +253,8 @@ async function startCamera() {
     try {
         await qr.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 240, height: 240 } },
+            // Ohne qrbox: ganzes Kamerabild wird gescannt, kein Rahmen der Bibliothek
+            { fps: 10 },
             onScan,
             () => { /* kein QR im Bild – normal */ }
         );
