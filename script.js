@@ -1,12 +1,15 @@
-// Fahrzeug-Scanner: QR-Code scannen, Standort erfassen, ans interne System senden.
+// Fahrzeug-Scanner
+// Ablauf: Handy hinhalten -> QR erkannt -> grünes Blinken -> nächstes Auto.
+// Keine Eingaben nötig. GPS läuft im Hintergrund mit, gespeichert wird ins Google Sheet.
 
 const CONFIG = window.QR_SCAN_CONFIG || {};
 const STORAGE_KEY = "qr_scan_scans";
-const HISTORY_LIMIT = 20;
+const COOLDOWN_MS = (CONFIG.cooldownSeconds || 20) * 1000;
+const FIX_MAX_AGE_MS = 30000;
 
 const $ = (id) => document.getElementById(id);
 
-// ---------- Lokale Ablage (Verlauf + Warteschlange für offline) ----------
+// ---------- Lokale Ablage (Verlauf + Warteschlange) ----------
 
 function loadScans() {
     try {
@@ -16,86 +19,22 @@ function loadScans() {
     }
 }
 
-function saveScans(scans) {
+function storeScans() {
+    // Gesendete nur die letzten 50 behalten, offene immer
+    const pending = scans.filter((s) => !s.sent);
+    const sent = scans.filter((s) => s.sent).slice(0, 50);
+    scans = [...pending, ...sent].sort((a, b) => b.scannedAt.localeCompare(a.scannedAt));
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(scans.slice(0, 200)));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scans));
     } catch (e) {
-        // Speicher nicht verfügbar (z. B. privater Modus) – dann eben nur im Speicher
+        // kein lokaler Speicher verfügbar
     }
 }
 
 let scans = loadScans();
 
-// ---------- Senden ----------
-
-async function sendScan(scan) {
-    if (!CONFIG.apiUrl) {
-        return { ok: false, reason: "Kein Server konfiguriert (Testmodus)" };
-    }
-    const headers = { "Content-Type": "application/json" };
-    if (CONFIG.apiToken) headers["Authorization"] = "Bearer " + CONFIG.apiToken;
-
-    const payload = {
-        id: scan.id,
-        fin: scan.vin || null,
-        qrInhalt: scan.raw || scan.code,
-        latitude: scan.latitude,
-        longitude: scan.longitude,
-        genauigkeitMeter: scan.accuracy,
-        notiz: scan.note,
-        gescanntAm: scan.scannedAt
-    };
-
-    try {
-        const res = await fetch(CONFIG.apiUrl, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) return { ok: false, reason: "Server antwortet " + res.status };
-        return { ok: true };
-    } catch (e) {
-        return { ok: false, reason: "Keine Verbindung" };
-    }
-}
-
-async function resendPending() {
-    const pending = scans.filter((s) => !s.sent);
-    for (const scan of pending) {
-        const r = await sendScan(scan);
-        if (r.ok) scan.sent = true;
-        else scan.error = r.reason;
-    }
-    saveScans(scans);
-    renderHistory();
-}
-
-// ---------- Standort ----------
-
-function getPosition() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error("Dieser Browser kann keinen Standort ermitteln."));
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            resolve,
-            (err) => {
-                const messages = {
-                    1: "Standortzugriff wurde verweigert. Bitte in den Browser-Einstellungen erlauben.",
-                    2: "Standort nicht verfügbar. GPS aktiv?",
-                    3: "Standort hat zu lange gedauert. Bitte erneut versuchen."
-                };
-                reject(new Error(messages[err.code] || "Standort konnte nicht ermittelt werden."));
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-    });
-}
-
-// ---------- FIN aus dem QR-Inhalt lesen ----------
-// QR-Codes an den Fahrzeugen enthalten Links wie
-// https://www.schuster-gruppe.de/fahrzeuge/VIN_VF7VFEHZ8M7835240_detail
+// ---------- FIN aus dem QR-Inhalt ----------
+// QR-Codes enthalten Links wie .../fahrzeuge/VIN_VF7VFEHZ8M7835240_detail
 // Eine FIN hat 17 Zeichen, ohne I, O und Q.
 
 function extractVin(text) {
@@ -105,172 +44,199 @@ function extractVin(text) {
     return plain ? plain[1].toUpperCase() : null;
 }
 
-// ---------- Ablauf eines Scans ----------
+// ---------- GPS im Hintergrund ----------
 
-let current = null;
-let scanner = null;
+let lastFix = null;
 
-function setStatus(text, type) {
-    const el = $("status");
-    el.textContent = text || "";
-    el.className = "status" + (type ? " " + type : "");
+function startGps() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.watchPosition(
+        (pos) => { lastFix = pos; },
+        () => { /* kein Fix – beim Scan wird erneut versucht */ },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
 }
 
-async function locateCurrent() {
-    $("btn-save").disabled = true;
-    $("r-pos").textContent = "wird ermittelt …";
-    $("r-acc").textContent = "–";
-    $("r-warn").hidden = true;
-
-    try {
-        const pos = await getPosition();
-        if (!current) return; // inzwischen verworfen
-        current.latitude = pos.coords.latitude;
-        current.longitude = pos.coords.longitude;
-        current.accuracy = Math.round(pos.coords.accuracy);
-
-        $("r-pos").textContent = current.latitude.toFixed(6) + ", " + current.longitude.toFixed(6);
-        $("r-acc").textContent = "± " + current.accuracy + " m";
-
-        const max = CONFIG.maxAccuracyMeters || 50;
-        if (current.accuracy > max) {
-            $("r-warn").textContent = "Standort ist ungenau. Am besten kurz warten und „Standort neu“ tippen.";
-            $("r-warn").hidden = false;
-        }
-        $("btn-save").disabled = false;
-    } catch (e) {
-        $("r-pos").textContent = "nicht verfügbar";
-        $("r-warn").textContent = e.message;
-        $("r-warn").hidden = false;
-    }
+function freshFix() {
+    return lastFix && Date.now() - lastFix.timestamp < FIX_MAX_AGE_MS ? lastFix : null;
 }
 
-function onScanSuccess(decodedText) {
-    if (current) return; // es läuft schon ein Scan
-    scanner.pause(true);
+function getFix() {
+    const fix = freshFix();
+    if (fix) return Promise.resolve(fix);
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { lastFix = pos; resolve(pos); },
+            () => resolve(null),
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+    });
+}
 
-    const raw = decodedText.trim();
-    const vin = extractVin(raw);
+// ---------- Rückmeldung ----------
 
-    current = {
-        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+let toastTimer = null;
+
+function feedback(text) {
+    const flash = $("flash");
+    flash.classList.remove("on");
+    void flash.offsetWidth; // Animation neu starten
+    flash.classList.add("on");
+
+    const toast = $("toast");
+    toast.textContent = text;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 1500);
+
+    if (navigator.vibrate) navigator.vibrate(120);
+}
+
+// ---------- Scannen ----------
+
+const recent = new Map(); // FIN -> Zeitpunkt des letzten Scans
+
+async function onScan(decodedText) {
+    const vin = extractVin(decodedText.trim());
+    if (!vin) return; // kein Fahrzeug-Code -> ignorieren
+
+    const now = Date.now();
+    if (recent.has(vin) && now - recent.get(vin) < COOLDOWN_MS) return;
+    recent.set(vin, now);
+
+    feedback("✓ " + vin);
+
+    const scan = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(now) + Math.random(),
         vin: vin,
-        raw: raw,
-        code: vin || raw,
+        link: decodedText.trim(),
         scannedAt: new Date().toISOString(),
-        note: "",
+        latitude: null,
+        longitude: null,
+        accuracy: null,
         sent: false
     };
-
-    $("r-code").textContent = current.code;
-    if (!vin) {
-        setStatus("Keine FIN im QR-Code gefunden – ist das ein Fahrzeug-Code?", "warn");
-    }
-    $("r-note").value = "";
-    $("result").hidden = false;
-    if (vin) setStatus("");
-    if (navigator.vibrate) navigator.vibrate(100);
-
-    locateCurrent();
-}
-
-function resetScan() {
-    current = null;
-    $("result").hidden = true;
-    try {
-        scanner.resume();
-    } catch (e) {
-        // Scanner war nicht pausiert
-    }
-}
-
-async function saveCurrent() {
-    if (!current || current.latitude == null) return;
-    current.note = $("r-note").value.trim();
-    $("btn-save").disabled = true;
-    setStatus("Wird gesendet …");
-
-    const scan = current;
-    const r = await sendScan(scan);
-    scan.sent = r.ok;
-    if (!r.ok) scan.error = r.reason;
-
     scans.unshift(scan);
-    saveScans(scans);
-    renderHistory();
+    storeScans();
+    render();
 
-    if (r.ok) setStatus("Gespeichert: " + scan.code, "ok");
-    else setStatus("Lokal gespeichert, wird nachgesendet (" + r.reason + ")", "warn");
-
-    resetScan();
+    const fix = await getFix();
+    if (fix) {
+        scan.latitude = fix.coords.latitude;
+        scan.longitude = fix.coords.longitude;
+        scan.accuracy = Math.round(fix.coords.accuracy);
+    }
+    storeScans();
+    render();
+    flush();
 }
 
-// ---------- Verlauf ----------
+// ---------- Senden ans Google Sheet ----------
 
-function renderHistory() {
+let flushing = false;
+
+async function flush() {
+    if (flushing || !CONFIG.sheetUrl || !navigator.onLine) return;
+    // Nur Scans senden, deren GPS-Abfrage abgeschlossen ist (oder die älter als 15 s sind)
+    const pending = scans.filter((s) => !s.sent &&
+        (s.latitude != null || Date.now() - Date.parse(s.scannedAt) > 15000));
+    if (!pending.length) return;
+
+    flushing = true;
+    try {
+        const res = await fetch(CONFIG.sheetUrl, {
+            method: "POST",
+            // text/plain vermeidet die CORS-Vorabfrage, die Apps Script nicht beantwortet
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                token: CONFIG.token,
+                scans: pending.map((s) => ({
+                    id: s.id,
+                    fin: s.vin,
+                    link: s.link,
+                    latitude: s.latitude,
+                    longitude: s.longitude,
+                    genauigkeit: s.accuracy,
+                    gescanntAm: s.scannedAt
+                }))
+            })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            const saved = new Set(data.saved || pending.map((s) => s.id));
+            scans.forEach((s) => { if (saved.has(s.id)) s.sent = true; });
+            storeScans();
+        }
+    } catch (e) {
+        // offline oder Sheet nicht erreichbar – später erneut
+    } finally {
+        flushing = false;
+        render();
+    }
+}
+
+// ---------- Anzeige ----------
+
+function render() {
     const list = $("history");
     list.textContent = "";
 
-    scans.slice(0, HISTORY_LIMIT).forEach((s) => {
+    scans.slice(0, 15).forEach((s) => {
         const li = document.createElement("li");
 
-        const title = document.createElement("strong");
-        title.textContent = s.code;
+        const vin = document.createElement("strong");
+        vin.textContent = s.vin;
 
-        const info = document.createElement("span");
-        const time = new Date(s.scannedAt).toLocaleString("de-DE", {
-            day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-        });
-        info.textContent = time + (s.note ? " · " + s.note : "");
+        const time = document.createElement("span");
+        time.className = "time";
+        time.textContent = new Date(s.scannedAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
-        const map = document.createElement("a");
-        map.href = "https://www.google.com/maps?q=" + s.latitude + "," + s.longitude;
-        map.target = "_blank";
-        map.rel = "noopener";
-        map.textContent = "Karte";
+        const state = document.createElement("span");
+        state.className = "dot " + (s.sent ? "ok" : "pending");
+        state.title = s.sent ? "im Sheet" : "wird gesendet";
 
-        const badge = document.createElement("span");
-        badge.className = "badge " + (s.sent ? "ok" : "pending");
-        badge.textContent = s.sent ? "gesendet" : "offen";
-
-        li.append(title, badge, info, map);
+        li.append(state, vin, time);
         list.appendChild(li);
     });
 
-    if (!scans.length) {
-        const li = document.createElement("li");
-        li.className = "empty";
-        li.textContent = "Noch keine Scans.";
-        list.appendChild(li);
-    }
+    const today = new Date().toDateString();
+    const countToday = scans.filter((s) => new Date(s.scannedAt).toDateString() === today).length;
+    const pending = scans.filter((s) => !s.sent).length;
 
-    const pendingCount = scans.filter((s) => !s.sent).length;
-    $("btn-resend").hidden = pendingCount === 0 || !CONFIG.apiUrl;
-    $("btn-resend").textContent = "Offene senden (" + pendingCount + ")";
+    let text = countToday + (countToday === 1 ? " Auto" : " Autos") + " heute";
+    if (!CONFIG.sheetUrl) text += " · nur lokal (kein Sheet eingetragen)";
+    else if (pending) text += " · " + pending + " noch nicht gesendet";
+    $("info").textContent = text;
 }
 
-// ---------- Start ----------
+// ---------- Kamera ----------
+
+let qr = null;
+
+async function startCamera() {
+    $("btn-start").hidden = true;
+    try {
+        await qr.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 240, height: 240 } },
+            onScan,
+            () => { /* kein QR im Bild – normal */ }
+        );
+    } catch (e) {
+        $("btn-start").hidden = false;
+    }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    $("btn-save").addEventListener("click", saveCurrent);
-    $("btn-cancel").addEventListener("click", resetScan);
-    $("btn-retry-pos").addEventListener("click", locateCurrent);
-    $("btn-resend").addEventListener("click", resendPending);
+    qr = new Html5Qrcode("reader");
+    $("btn-start").addEventListener("click", startCamera);
 
-    if (!CONFIG.apiUrl) {
-        setStatus("Testmodus: kein Server eingetragen, Scans bleiben auf dem Gerät.", "warn");
-    }
+    render();
+    startGps();
+    startCamera();
 
-    scanner = new Html5QrcodeScanner("my-qr-reader", {
-        fps: 10,
-        qrbox: 250,
-        rememberLastUsedCamera: true
-    });
-    scanner.render(onScanSuccess);
-
-    renderHistory();
-
-    // Offene Scans automatisch nachsenden, sobald wieder Netz da ist
-    window.addEventListener("online", resendPending);
-    if (navigator.onLine) resendPending();
+    window.addEventListener("online", flush);
+    setInterval(flush, 20000);
+    flush();
 });

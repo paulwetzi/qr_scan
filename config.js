@@ -1,13 +1,11 @@
-// Konfiguration für die Anbindung an das interne System.
-// apiUrl leer lassen = Testmodus: Scans werden nur lokal auf dem Gerät gespeichert.
+// Konfiguration
 window.QR_SCAN_CONFIG = {
-    // Endpunkt, der die Scans per POST (JSON) annimmt, z. B. "https://ims.example.local/api/fahrzeug-standorte"
-    apiUrl: "",
+    // Web-App-URL des Google Apps Script (endet auf /exec). Leer = nur lokal speichern.
+    sheetUrl: "",
 
-    // Optionaler Token, wird als "Authorization: Bearer <token>" mitgeschickt.
-    // Achtung: Alles hier ist für jeden sichtbar, der die Seite aufruft.
-    apiToken: "",
+    // Muss mit TOKEN in apps-script/Code.gs übereinstimmen.
+    token: "",
 
-    // Ab dieser Ungenauigkeit (in Metern) wird gewarnt, bevor gespeichert wird.
-    maxAccuracyMeters: 50
+    // Dasselbe Auto wird innerhalb dieser Zeit nicht nochmal gespeichert (Sekunden).
+    cooldownSeconds: 20
 };

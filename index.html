@@ -4,41 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1980f6">
     <link rel="stylesheet" href="style.css">
     <title>Fahrzeug-Scanner</title>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Fahrzeug scannen</h1>
+    <div id="flash"></div>
+    <div id="toast" hidden></div>
 
-        <div class="section">
-            <div id="my-qr-reader"></div>
+    <main class="container">
+        <h1>Fahrzeug-Scanner</h1>
 
-            <div id="result" class="result" hidden>
-                <div class="row"><span class="label">FIN</span><span id="r-code" class="value"></span></div>
-                <div class="row"><span class="label">Standort</span><span id="r-pos" class="value">wird ermittelt …</span></div>
-                <div class="row"><span class="label">Genauigkeit</span><span id="r-acc" class="value">–</span></div>
-                <p id="r-warn" class="warn" hidden></p>
-                <input id="r-note" type="text" placeholder="Notiz, z. B. Stellplatz B12 (optional)">
-                <div class="actions">
-                    <button id="btn-save" disabled>Speichern</button>
-                    <button id="btn-retry-pos" class="secondary">Standort neu</button>
-                    <button id="btn-cancel" class="secondary">Verwerfen</button>
-                </div>
-            </div>
-
-            <p id="status" class="status"></p>
+        <div class="camera">
+            <div id="reader"></div>
+            <button id="btn-start" hidden>Kamera starten</button>
         </div>
 
-        <div class="section history">
-            <div class="history-head">
-                <h2>Letzte Scans</h2>
-                <button id="btn-resend" class="secondary" hidden>Offene senden</button>
-            </div>
+        <p id="info" class="info"></p>
+
+        <section class="history">
+            <h2>Zuletzt gescannt</h2>
             <ul id="history"></ul>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="config.js"></script>
