@@ -33,6 +33,7 @@ h1 {
 }
 
 .camera {
+    position: relative;
     background: #000;
     border-radius: 12px;
     overflow: hidden;
@@ -49,6 +50,20 @@ h1 {
 #reader video {
     width: 100% !important;
     display: block;
+}
+
+#btn-zoom {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    min-width: 54px;
+    padding: 10px 12px;
+    font-size: 17px;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 #btn-start {
