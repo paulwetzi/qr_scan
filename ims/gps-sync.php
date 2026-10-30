@@ -82,6 +82,14 @@ $ch = curl_init(SHEET_URL . '?token=' . urlencode(SHEET_TOKEN));
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);   // Google leitet die Antwort um
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+// Aktuelle Zertifikatsliste mitliefern: Die des Servers ist zu alt für Google
+// ("SSL certificate problem ... certificate verify failed"). cacert.pem liegt neben diesem Skript.
+$ca = dirname(__FILE__) . '/cacert.pem';
+if (is_file($ca)) {
+    curl_setopt($ch, CURLOPT_CAINFO, $ca);
+}
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 $antwort = curl_exec($ch);
 $fehler  = curl_error($ch);
 curl_close($ch);
