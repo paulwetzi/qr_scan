@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 952 956" width="952" height="956" font-family="Segoe UI, Arial, sans-serif">
+<!-- Geländeplan Schuster, nachgezeichnet aus dem Satellitenbild.
+     Koordinaten = Pixel des Original-Screenshots (952x956), Bild ist NICHT genordet.
+     GPS -> Pixel später über affine Transformation aus 3+ Referenzpunkten. -->
+<rect x="0" y="0" width="952" height="956" fill="#cfe3bf" />
+<rect x="0" y="0" width="172" height="312" fill="#e9dcb8" />
+<polygon points="205,0 916,0 916,130 952,130 952,926 880,908 600,861 320,796 298,786 290,780 200,778 200,752 18,752 18,312 205,312" fill="#eceef1" />
+<polygon points="0,778 220,782 300,795 600,865 952,930 952,972 600,905 300,836 220,822 0,820" fill="#a3a9b1" />
+<polyline points="0,799 220,802 300,816 600,885 952,951" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="14 10"/>
+<rect x="80" y="566" width="120" height="8" fill="#b5d49f" rx="3"/>
+<rect x="85" y="662" width="110" height="7" fill="#b5d49f" rx="3"/>
+<polygon points="388,52 523,52 523,275 536,275 536,405 333,405 333,275 345,275 345,253 388,253" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="434" y="330" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Škoda Autohaus</text>
+<polygon points="322,6 470,6 470,45 322,45" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="396" y="26" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Halle Nord</text>
+<polygon points="690,10 915,10 915,118 690,118" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="802" y="64" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Halle Nordost</text>
+<polygon points="28,332 236,332 236,470 28,470" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="132" y="401" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Gebäude West</text>
+<polygon points="620,708 778,708 778,788 620,788" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="699" y="748" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Schuster Automobile</text>
+<polygon points="203,716 243,716 243,757 203,757" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
+<text x="700" y="900" font-size="15" fill="#4b5563" text-anchor="middle" transform="rotate(11 700 900)" font-style="italic">Rotthofer Straße</text>
+<text x="86" y="160" font-size="13" fill="#8a7a55" text-anchor="middle">Feld</text>
+</svg>
