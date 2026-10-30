@@ -7,19 +7,9 @@
 <polygon points="205,0 916,0 916,130 952,130 952,926 880,908 600,861 320,796 298,786 290,780 200,778 200,752 18,752 18,312 205,312" fill="#eceef1" />
 <polygon points="0,778 220,782 300,795 600,865 952,930 952,972 600,905 300,836 220,822 0,820" fill="#a3a9b1" />
 <polyline points="0,799 220,802 300,816 600,885 952,951" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="14 10"/>
-<rect x="212" y="347" width="20" height="96" fill="#8fa3bd" rx="2"/>
-<rect x="80" y="566" width="120" height="8" fill="#b5d49f" rx="3"/>
-<rect x="85" y="662" width="110" height="7" fill="#b5d49f" rx="3"/>
 <polygon points="385,67 515,67 515,275 535,275 535,405 332,405 332,275 385,275" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
-<text x="434" y="330" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Škoda Autohaus</text>
 <polygon points="322,8 469,8 469,45 322,45" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
-<text x="396" y="26" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Halle Nord</text>
 <polygon points="692,12 912,12 912,117 692,117" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
-<text x="802" y="64" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Halle Nordost</text>
 <polygon points="43,360 201,360 201,467 43,467" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
-<text x="122" y="414" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Gebäude West</text>
 <polygon points="617,730 775,730 775,787 617,787" fill="#2f4a6d" stroke="#1d3150" stroke-width="2" stroke-linejoin="round"/>
-<text x="696" y="758" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="600">Schuster Automobile</text>
-<text x="700" y="900" font-size="15" fill="#4b5563" text-anchor="middle" transform="rotate(11 700 900)" font-style="italic">Rotthofer Straße</text>
-<text x="86" y="160" font-size="13" fill="#8a7a55" text-anchor="middle">Feld</text>
 </svg>
