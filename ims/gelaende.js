@@ -1,5 +1,5 @@
 // Umrechnung GPS <-> Pixel im Geländeplan (ims/gelaende.svg, 952 x 956 px).
-// Der Plan ist NICHT genordet (um -36.3° gedreht). Ermittelt aus den
+// Der Plan ist NICHT genordet (um -36.4° gedreht). Ermittelt aus den
 // Gebäudeecken in OpenStreetMap, mittlere Abweichung ca. 2 m.
 // Schuster, Rotthofer Straße 10, 94099 Ruhstorf a.d.Rott.
 
@@ -7,8 +7,8 @@ const GELAENDE = {
     breite: 952, hoehe: 956,
     lat0: 48.429, lon0: 13.3225,          // Bezugspunkt
     mx: 73866.1225, my: 111320.0,          // Meter pro Grad (Länge / Breite)
-    a: 4.156256, b: -3.057419,            // Drehung + Maßstab (5.160 px/m)
-    c: 362.0724, d: 395.5246           // Verschiebung (px)
+    a: 4.129406, b: -3.040997,            // Drehung + Maßstab (5.128 px/m)
+    c: 361.1014, d: 396.3646           // Verschiebung (px)
 };
 
 // GPS -> Pixel im Plan (x nach rechts, y nach unten)

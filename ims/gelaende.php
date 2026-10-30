@@ -1,6 +1,6 @@
 <?php
 // Umrechnung GPS <-> Pixel im Geländeplan (ims/gelaende.svg, 952 x 956 px).
-// Der Plan ist NICHT genordet (um -36.3° gedreht). Ermittelt aus den
+// Der Plan ist NICHT genordet (um -36.4° gedreht). Ermittelt aus den
 // Gebäudeecken in OpenStreetMap, mittlere Abweichung ca. 2 m. Läuft auch auf PHP 5.
 
 define('GEL_BREITE', 952);
@@ -9,10 +9,10 @@ define('GEL_LAT0', 48.429);
 define('GEL_LON0', 13.3225);
 define('GEL_MX', 73866.1225);
 define('GEL_MY', 111320.0);
-define('GEL_A', 4.156256);
-define('GEL_B', -3.057419);
-define('GEL_C', 362.0724);
-define('GEL_D', 395.5246);
+define('GEL_A', 4.129406);
+define('GEL_B', -3.040997);
+define('GEL_C', 361.1014);
+define('GEL_D', 396.3646);
 
 // GPS -> Pixel im Plan (x nach rechts, y nach unten)
 function gelaende_gps_zu_pixel($lat, $lon)
