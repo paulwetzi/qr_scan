@@ -37,6 +37,9 @@ if (is_file($ca)) {
 }
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+// geoservices.bayern.de verlangt TLS 1.2; alte Server bieten sonst nur TLS 1.0 an
+// ("tlsv1 alert protocol version"). 6 = CURL_SSLVERSION_TLSv1_2
+curl_setopt($ch, CURLOPT_SSLVERSION, defined('CURL_SSLVERSION_TLSv1_2') ? CURL_SSLVERSION_TLSv1_2 : 6);
 $bild = curl_exec($ch);
 $fehler = curl_error($ch);
 $typ = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
@@ -44,7 +47,10 @@ $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 if ($bild === false) {
-	die('Luftbild nicht erreichbar: ' . $fehler . $nl);
+	die('Luftbild nicht erreichbar: ' . $fehler . $nl
+		. 'Kein Problem: Die Karte im IMS funktioniert trotzdem, dann laedt der Browser das Bild direkt vom Landesamt.' . $nl
+		. 'Alternativ diese Adresse im Browser oeffnen, als gps-luftbild.jpg speichern und nach api/img/ kopieren:' . $nl
+		. htmlspecialchars($url) . $nl);
 }
 if ($status != 200 || strpos((string)$typ, 'image/jpeg') !== 0 || strlen($bild) < 20000) {
 	die('Unerwartete Antwort vom Landesamt (HTTP ' . $status . ', ' . $typ . '): '
