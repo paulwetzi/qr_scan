@@ -43,7 +43,7 @@
         <p class="info" id="info">Lade Standorte …</p>
     </main>
 
-    <script src="config.js?v=7"></script>
+    <script src="config.js?v=8"></script>
     <script src="ims/gelaende.js?v=1"></script>
     <script>
         const plan = document.getElementById("plan");
@@ -67,7 +67,11 @@
 
         async function load() {
             const cfg = window.QR_SCAN_CONFIG || {};
-            const url = cfg.sheetUrl + "?token=" + encodeURIComponent(cfg.token || "");
+            const geraet = window.qrScanGeraet || {};
+            if (!geraet.freigegeben) {
+                throw new Error("Dieses Gerät ist nicht freigegeben. Bitte zuerst im Scanner (index.html) die Freischaltung anfragen.");
+            }
+            const url = cfg.sheetUrl + "?geraet=" + encodeURIComponent(geraet.id);
             const data = await fetch(url).then((r) => r.json());
             if (!data.ok) throw new Error(data.error || "Fehler");
 

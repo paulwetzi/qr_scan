@@ -52,6 +52,52 @@ h1 {
     display: block;
 }
 
+/* Gerätefreigabe */
+.gate {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px 16px;
+}
+
+.gate h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.gate p {
+    margin: 0 0 12px;
+    line-height: 1.4;
+}
+
+.gate input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.gate button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    background: var(--blue);
+}
+
+.gate button:disabled {
+    opacity: 0.5;
+}
+
+.gate .gate-id {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+
 #btn-zoom {
     position: absolute;
     right: 10px;

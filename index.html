@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1980f6">
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
     <title>Fahrzeug-Scanner</title>
 </head>
 
@@ -16,6 +16,17 @@
     <main class="container">
         <h1>Fahrzeug-Scanner</h1>
 
+        <section id="gate" class="gate" hidden>
+            <h2>Gerät freischalten</h2>
+            <p id="gate-text">Dieses Gerät ist noch nicht freigegeben.</p>
+            <div id="gate-form">
+                <input id="gate-name" type="text" maxlength="60" placeholder="Dein Name, z. B. Max Handy">
+                <button id="gate-btn" type="button">Freischaltung anfragen</button>
+            </div>
+            <p class="gate-id">Geräte-Code: <code id="gate-id"></code></p>
+        </section>
+
+        <div id="app" hidden>
         <div class="camera">
             <div id="reader"></div>
             <button id="btn-zoom" type="button" hidden>1×</button>
@@ -28,10 +39,11 @@
             <h2>Zuletzt gescannt</h2>
             <ul id="history"></ul>
         </section>
+        </div>
     </main>
 
-    <script src="config.js?v=7"></script>
-    <script src="script.js?v=7"></script>
+    <script src="config.js?v=8"></script>
+    <script src="script.js?v=8"></script>
 </body>
 
 </html>

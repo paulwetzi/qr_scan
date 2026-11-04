@@ -3,6 +3,7 @@
 // Keine Eingaben nötig. GPS läuft im Hintergrund mit, gespeichert wird ins Google Sheet.
 
 const CONFIG = window.QR_SCAN_CONFIG || {};
+const GERAET = window.qrScanGeraet;
 const STORAGE_KEY = "qr_scan_scans";
 const COOLDOWN_MS = (CONFIG.cooldownSeconds || 20) * 1000;
 const FIX_MAX_AGE_MS = 30000;
@@ -172,7 +173,7 @@ let flushing = false;
 let sendError = "";
 
 async function flush() {
-    if (flushing || !CONFIG.sheetUrl || !navigator.onLine) return;
+    if (flushing || !appUnlocked || !CONFIG.sheetUrl || !navigator.onLine) return;
     // Nur Scans senden, deren GPS-Abfrage abgeschlossen ist (oder die älter als 15 s sind)
     const pending = scans.filter((s) => !s.sent &&
         (s.latitude != null || Date.now() - Date.parse(s.scannedAt) > 15000));
@@ -185,7 +186,7 @@ async function flush() {
             // text/plain vermeidet die CORS-Vorabfrage, die Apps Script nicht beantwortet
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
-                token: CONFIG.token,
+                geraet: GERAET.id,
                 scans: pending.map((s) => ({
                     id: s.id,
                     fin: s.vin,
@@ -203,6 +204,11 @@ async function flush() {
             scans.forEach((s) => { if (saved.has(s.id)) s.sent = true; });
             storeScans();
             sendError = "";
+        } else if (data.gesperrt) {
+            // Freigabe wurde entzogen: Scanner sperren, Scans bleiben auf dem Gerät
+            GERAET.freigegeben = false;
+            GERAET.save();
+            lockApp();
         } else {
             sendError = data.error || "Sheet hat abgelehnt";
         }
@@ -274,7 +280,7 @@ let zoomIndex = 0;
 
 function setupWorker() {
     try {
-        worker = new Worker("scan-worker.js?v=7");
+        worker = new Worker("scan-worker.js?v=8");
         worker.onmessage = (e) => {
             workerBusy = false;
             if (e.data.text) onScan(e.data.text);
@@ -402,7 +408,105 @@ async function startCamera() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
+// ---------- Gerätefreigabe ----------
+// Nur Geräte, die im Sheet (Blatt "Geräte") freigegeben sind, dürfen scannen.
+
+let appUnlocked = false;
+let scannerReady = false;
+let statusTimer = null;
+
+async function fragGeraetAn(name) {
+    const res = await fetch(CONFIG.sheetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ aktion: "anmelden", geraet: GERAET.id, name: name || GERAET.name })
+    });
+    return res.json();
+}
+
+function showGate(text, showForm) {
+    $("app").hidden = true;
+    $("gate").hidden = false;
+    $("gate-text").textContent = text;
+    $("gate-form").hidden = !showForm;
+    $("gate-id").textContent = GERAET.id.slice(0, 8);
+}
+
+function waitForApproval() {
+    showGate("Anfrage gesendet. Warte auf Freigabe … (Admin setzt im Sheet im Blatt „Geräte“ bei „" +
+        GERAET.name + "“ das Häkchen)", false);
+    clearInterval(statusTimer);
+    statusTimer = setInterval(checkStatus, 10000);
+}
+
+async function checkStatus() {
+    if (!CONFIG.sheetUrl || !navigator.onLine) return;
+    try {
+        const r = await fragGeraetAn();
+        if (r.ok && r.freigegeben) {
+            clearInterval(statusTimer);
+            GERAET.freigegeben = true;
+            if (r.name) GERAET.name = r.name;
+            GERAET.save();
+            unlockApp();
+        } else if (r.ok === false && !GERAET.freigegeben && GERAET.name && /Namen/.test(r.error || "")) {
+            // Gerät wurde im Sheet gelöscht -> neu anmelden lassen
+            clearInterval(statusTimer);
+            GERAET.name = "";
+            GERAET.save();
+            showGate("Dieses Gerät ist noch nicht freigegeben.", true);
+        }
+    } catch (e) { /* offline – später erneut */ }
+}
+
+async function requestAccess() {
+    const name = $("gate-name").value.trim();
+    if (!name) { $("gate-name").focus(); return; }
+    $("gate-btn").disabled = true;
+    try {
+        const r = await fragGeraetAn(name);
+        if (!r.ok) throw new Error(r.error || "Anfrage fehlgeschlagen");
+        GERAET.name = r.name || name;
+        GERAET.freigegeben = !!r.freigegeben;
+        GERAET.save();
+        if (GERAET.freigegeben) unlockApp();
+        else waitForApproval();
+    } catch (e) {
+        $("gate-text").textContent = e.message === "Failed to fetch"
+            ? "Keine Verbindung. Bitte mit Internet erneut versuchen."
+            : e.message;
+    } finally {
+        $("gate-btn").disabled = false;
+    }
+}
+
+function lockApp() {
+    appUnlocked = false;
+    stopCamera();
+    showGate("Dieses Gerät ist nicht (mehr) freigegeben.", false);
+    clearInterval(statusTimer);
+    statusTimer = setInterval(checkStatus, 30000);
+}
+
+async function unlockApp() {
+    appUnlocked = true;
+    $("gate").hidden = true;
+    $("app").hidden = false;
+
+    if (!scannerReady) {
+        scannerReady = true;
+        render();
+        startGps();
+        setupWorker();
+        await setupNativeDetector();
+        window.addEventListener("online", flush);
+        setInterval(flush, 20000);
+    }
+    startCamera();
+    flush();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
     video = document.createElement("video");
     video.setAttribute("playsinline", "");
     video.muted = true;
@@ -413,20 +517,44 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     $("btn-start").addEventListener("click", startCamera);
     $("btn-zoom").addEventListener("click", toggleZoom);
-
-    render();
-    startGps();
-    setupWorker();
-    await setupNativeDetector();
-    startCamera();
+    $("gate-btn").addEventListener("click", requestAccess);
+    $("gate-name").addEventListener("keydown", (e) => { if (e.key === "Enter") requestAccess(); });
 
     // Handy gesperrt / App gewechselt: Kamera aus, beim Zurückkommen wieder an
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) stopCamera();
-        else startCamera();
+        else if (appUnlocked) startCamera();
     });
 
-    window.addEventListener("online", flush);
-    setInterval(flush, 20000);
-    flush();
+    if (GERAET.freigegeben) {
+        // Schon freigegeben: sofort scannen (auch offline), Status im Hintergrund prüfen
+        unlockApp();
+        checkStatusRevoked();
+    } else if (GERAET.name) {
+        waitForApproval();
+        checkStatus();
+    } else {
+        showGate("Dieses Gerät ist noch nicht freigegeben. Gib deinen Namen ein und frag die Freischaltung an.", true);
+    }
 });
+
+// Prüft beim Start, ob die Freigabe inzwischen entzogen wurde
+async function checkStatusRevoked() {
+    if (!CONFIG.sheetUrl || !navigator.onLine) return;
+    try {
+        const r = await fragGeraetAn();
+        if (r.ok && !r.freigegeben) {
+            GERAET.freigegeben = false;
+            GERAET.save();
+            lockApp();
+        } else if (!r.ok && /Namen/.test(r.error || "")) {
+            // Gerät wurde im Sheet gelöscht
+            GERAET.freigegeben = false;
+            GERAET.name = "";
+            GERAET.save();
+            appUnlocked = false;
+            stopCamera();
+            showGate("Dieses Gerät ist nicht mehr freigegeben. Bitte neu anfragen.", true);
+        }
+    } catch (e) { /* offline – weiter scannen, Scans werden später gesendet */ }
+}
