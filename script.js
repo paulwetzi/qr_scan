@@ -67,6 +67,22 @@ function readImsParams(text) {
     return vin.toUpperCase();
 }
 
+// Auto-ID aus dem IMS-Aufkleber (autoid=<base64>), eindeutiger als die FIN:
+// dieselbe FIN kann im IMS unter mehreren Auto-IDs angelegt sein.
+function extractAutoId(text) {
+    let url;
+    try {
+        url = new URL(text);
+    } catch (e) {
+        return null;
+    }
+    const raw = url.searchParams.get("autoid");
+    if (!raw) return null;
+    const id = decodeBase64(raw);
+    if (id && /^\d{1,10}$/.test(id)) return id;
+    return /^\d{1,10}$/.test(raw.trim()) ? raw.trim() : null;
+}
+
 function extractVin(text) {
     const ims = readImsParams(text);
     if (ims) return ims;
@@ -127,24 +143,28 @@ function feedback(text) {
 
 // ---------- Scannen ----------
 
-const recent = new Map(); // FIN -> Zeitpunkt des letzten Scans
+const recent = new Map(); // Auto-ID (bzw. FIN) -> Zeitpunkt des letzten Scans
 
 async function onScan(decodedText) {
     const raw = String(decodedText || "").trim();
     if (!raw) return;
 
-    // FIN aus dem Link, sonst der ganze QR-Inhalt als Kennung
-    const key = extractVin(raw) || raw;
+    // Auto-ID und FIN aus dem Link; ohne beides dient der QR-Inhalt als Kennung
+    const autoid = extractAutoId(raw);
+    const vin = extractVin(raw) || raw;
+    const key = autoid ? "ID " + autoid : vin;
 
     const now = Date.now();
     if (recent.has(key) && now - recent.get(key) < COOLDOWN_MS) return;
     recent.set(key, now);
 
-    feedback("✓ " + (key.length > 40 ? key.slice(0, 40) + "…" : key));
+    const label = (vin.length > 40 ? vin.slice(0, 40) + "…" : vin) + (autoid ? " · ID " + autoid : "");
+    feedback("✓ " + label);
 
     const scan = {
         id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(now) + "-" + Math.random().toString(36).slice(2),
-        vin: key,
+        vin: vin,
+        autoid: autoid,
         link: raw,
         scannedAt: new Date().toISOString(),
         latitude: null,
@@ -189,6 +209,7 @@ async function flush() {
                 geraet: GERAET.id,
                 scans: pending.map((s) => ({
                     id: s.id,
+                    autoId: s.autoid || extractAutoId(s.link) || null,
                     fin: s.vin,
                     link: s.link,
                     latitude: s.latitude,
@@ -232,6 +253,13 @@ function render() {
 
         const vin = document.createElement("strong");
         vin.textContent = s.vin;
+        const aid = s.autoid || extractAutoId(s.link || "");
+        if (aid) {
+            const idEl = document.createElement("small");
+            idEl.className = "autoid";
+            idEl.textContent = " ID " + aid;
+            vin.appendChild(idEl);
+        }
 
         const time = document.createElement("span");
         time.className = "time";
@@ -280,7 +308,7 @@ let zoomIndex = 0;
 
 function setupWorker() {
     try {
-        worker = new Worker("scan-worker.js?v=8");
+        worker = new Worker("scan-worker.js?v=9");
         worker.onmessage = (e) => {
             workerBusy = false;
             if (e.data.text) onScan(e.data.text);

@@ -170,6 +170,12 @@ h1 {
     letter-spacing: 0.02em;
 }
 
+#history strong .autoid {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .time {
     color: var(--muted);
     font-size: 14px;

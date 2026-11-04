@@ -54,7 +54,9 @@ try {
 }
 
 foreach ($fahrzeuge as $i => $f) {
-    $fahrzeuge[$i]['autoId'] = autoIdAusLink(isset($f['link']) ? $f['link'] : null);
+    if (empty($f['autoId'])) {
+        $fahrzeuge[$i]['autoId'] = autoIdAusLink(isset($f['link']) ? $f['link'] : null);
+    }
 }
 usort($fahrzeuge, 'nachZeitAbsteigend');
 ?>

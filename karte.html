@@ -29,7 +29,7 @@
 <body>
     <header>
         <h1>Fahrzeugkarte</h1>
-        <input id="search" type="search" placeholder="FIN suchen …" autocomplete="off">
+        <input id="search" type="search" placeholder="FIN oder Auto-ID suchen" autocomplete="off">
     </header>
     <main>
         <div class="plan" id="plan">
@@ -43,7 +43,7 @@
         <p class="info" id="info">Lade Standorte …</p>
     </main>
 
-    <script src="config.js?v=8"></script>
+    <script src="config.js?v=9"></script>
     <script src="ims/gelaende.js?v=1"></script>
     <script>
         const plan = document.getElementById("plan");
@@ -56,7 +56,7 @@
             tip.className = "tip";
             const when = f.zuletztGescannt ? new Date(f.zuletztGescannt).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "";
             tip.innerHTML = "<b></b><br><span></span>";
-            tip.querySelector("b").textContent = f.fin;
+            tip.querySelector("b").textContent = f.fin + (f.autoId ? " · ID " + f.autoId : "");
             tip.querySelector("span").textContent = when + (f.genauigkeit ? " · ±" + f.genauigkeit + " m" : "");
             tip.style.left = m.style.left;
             const xp = parseFloat(m.style.left);
@@ -98,7 +98,7 @@
             const q = e.target.value.trim().toUpperCase();
             let first = null;
             markers.forEach(({ m, f }) => {
-                const hit = q.length >= 3 && String(f.fin).toUpperCase().includes(q);
+                const hit = q.length >= 3 && (String(f.fin).toUpperCase().includes(q) || String(f.autoId || "") === q);
                 m.classList.toggle("hit", hit);
                 if (hit && !first) first = { m, f };
             });

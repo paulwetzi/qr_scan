@@ -26,8 +26,10 @@ const TOKEN = "HIER-EIN-GEHEIMES-WORT-EINTRAGEN";
 const STANDORTE = "Standorte";
 const VERLAUF = "Verlauf";
 const GERAETE = "Geräte";
-const HEAD_STANDORTE = ["FIN", "Latitude", "Longitude", "Genauigkeit (m)", "Zuletzt gescannt", "Karte", "Link"];
-const HEAD_VERLAUF = ["Scan-ID", "FIN", "Latitude", "Longitude", "Genauigkeit (m)", "Gescannt am", "Link", "Gerät"];
+// Standorte: eine Zeile pro Auto-ID (dieselbe FIN kann im IMS unter mehreren Auto-IDs angelegt sein).
+// Codes ohne Auto-ID werden über die FIN geführt.
+const HEAD_STANDORTE = ["Auto-ID", "FIN", "Latitude", "Longitude", "Genauigkeit (m)", "Zuletzt gescannt", "Karte", "Link"];
+const HEAD_VERLAUF = ["Scan-ID", "FIN", "Latitude", "Longitude", "Genauigkeit (m)", "Gescannt am", "Link", "Gerät", "Auto-ID"];
 const HEAD_GERAETE = ["Geräte-ID", "Name", "Angefragt am", "Freigegeben", "Zuletzt aktiv"];
 
 const MAX_OFFENE_ANFRAGEN = 30;   // Schutz gegen massenhaft Anmeldungen
@@ -66,20 +68,21 @@ function doGet(e) {
     }
   }
 
-  const standorte = sheet(STANDORTE, HEAD_STANDORTE);
+  const standorte = standorteBlatt();
   const lastRow = standorte.getLastRow();
   const rows = lastRow > 1 ? standorte.getRange(2, 1, lastRow - 1, HEAD_STANDORTE.length).getValues() : [];
 
   const fahrzeuge = rows
-    .filter((r) => r[0])
+    .filter((r) => r[0] !== "" || r[1] !== "")
     .map((r) => ({
-      fin: r[0],
-      latitude: r[1] === "" ? null : r[1],
-      longitude: r[2] === "" ? null : r[2],
-      genauigkeit: r[3] === "" ? null : r[3],
-      zuletztGescannt: r[4] instanceof Date ? r[4].toISOString() : r[4],
-      karte: r[5],
-      link: r[6]
+      autoId: r[0] === "" ? null : String(r[0]),
+      fin: r[1],
+      latitude: r[2] === "" ? null : r[2],
+      longitude: r[3] === "" ? null : r[3],
+      genauigkeit: r[4] === "" ? null : r[4],
+      zuletztGescannt: r[5] instanceof Date ? r[5].toISOString() : r[5],
+      karte: r[6],
+      link: r[7]
     }));
 
   return json({ ok: true, anzahl: fahrzeuge.length, fahrzeuge: fahrzeuge });
@@ -145,52 +148,130 @@ function istJa(v) {
 
 function speichereScans(scans, geraeteName) {
   const verlauf = sheet(VERLAUF, HEAD_VERLAUF);
-  const standorte = sheet(STANDORTE, HEAD_STANDORTE);
+  const standorte = standorteBlatt();
 
   // Bereits gespeicherte Scan-IDs (falls das Handy etwas doppelt nachsendet)
   const known = new Set(columnValues(verlauf, 1));
 
-  // FIN -> Zeilennummer + Zeitpunkt in "Standorte"
-  const finRows = {};
-  const lastRow = standorte.getLastRow();
-  if (lastRow > 1) {
-    standorte.getRange(2, 1, lastRow - 1, 5).getValues().forEach((r, i) => {
-      finRows[r[0]] = { row: i + 2, time: r[4] instanceof Date ? r[4].getTime() : 0 };
-    });
-  }
+  // Schlüssel (Auto-ID bzw. FIN) -> Zeilennummer + Zeitpunkt in "Standorte"
+  const zeilen = standorteIndex(standorte);
 
   const saved = [];
   scans.forEach((s) => {
     if (!s || !s.id || !s.fin) return;
     const fin = String(s.fin).toUpperCase().slice(0, 300);
+    const link = String(s.link || "").slice(0, 500);
+    const autoId = gueltigeAutoId(s.autoId) || autoIdAusLink(link) || "";
     const time = new Date(s.gescanntAm || Date.now());
     const lat = numOrEmpty(s.latitude);
     const lng = numOrEmpty(s.longitude);
     const acc = numOrEmpty(s.genauigkeit);
-    const link = String(s.link || "").slice(0, 500);
 
     if (!known.has(s.id)) {
-      verlauf.appendRow([s.id, fin, lat, lng, acc, time, link, geraeteName]);
+      verlauf.appendRow([s.id, fin, lat, lng, acc, time, link, geraeteName, autoId]);
       known.add(s.id);
     }
 
     // Standort nur übernehmen, wenn GPS vorhanden und der Scan neuer ist
     if (lat !== "" && lng !== "") {
-      const map = "https://www.google.com/maps?q=" + lat + "," + lng;
-      const rowData = [fin, lat, lng, acc, time, map, link];
-      const existing = finRows[fin];
-      if (!existing) {
-        standorte.appendRow(rowData);
-        finRows[fin] = { row: standorte.getLastRow(), time: time.getTime() };
-      } else if (time.getTime() >= existing.time) {
-        standorte.getRange(existing.row, 1, 1, rowData.length).setValues([rowData]);
-        existing.time = time.getTime();
-      }
+      setzeStandort(standorte, zeilen, [autoId, fin, lat, lng, acc, time, kartenLink(lat, lng), link]);
     }
     saved.push(s.id);
   });
 
   return json({ ok: true, saved: saved });
+}
+
+function schluessel(autoId, fin) {
+  return autoId !== "" && autoId != null ? "ID:" + autoId : "FIN:" + fin;
+}
+
+function standorteIndex(sh) {
+  const zeilen = {};
+  const last = sh.getLastRow();
+  if (last > 1) {
+    sh.getRange(2, 1, last - 1, 6).getValues().forEach((r, i) => {
+      zeilen[schluessel(r[0], r[1])] = { row: i + 2, time: r[5] instanceof Date ? r[5].getTime() : 0 };
+    });
+  }
+  return zeilen;
+}
+
+function setzeStandort(sh, zeilen, rowData) {
+  const key = schluessel(rowData[0], rowData[1]);
+  const time = rowData[5].getTime();
+  const vorhanden = zeilen[key];
+  if (!vorhanden) {
+    sh.appendRow(rowData);
+    zeilen[key] = { row: sh.getLastRow(), time: time };
+  } else if (time >= vorhanden.time) {
+    sh.getRange(vorhanden.row, 1, 1, rowData.length).setValues([rowData]);
+    vorhanden.time = time;
+  }
+}
+
+function kartenLink(lat, lng) {
+  return "https://www.google.com/maps?q=" + lat + "," + lng;
+}
+
+// ---------- Auto-ID ----------
+
+function gueltigeAutoId(v) {
+  const s = String(v == null ? "" : v).trim();
+  return /^\d{1,10}$/.test(s) ? s : null;
+}
+
+// IMS-Aufkleber: ...qr-analyze.php?autoid=<base64>&fgstnr=<base64>
+function autoIdAusLink(link) {
+  const m = String(link || "").match(/[?&]autoid=([^&#]+)/);
+  if (!m) return null;
+  try {
+    let b64 = decodeURIComponent(m[1]).trim().replace(/ /g, "+").replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const text = Utilities.newBlob(Utilities.base64Decode(b64)).getDataAsString().trim();
+    return gueltigeAutoId(text) || gueltigeAutoId(m[1]);
+  } catch (e) {
+    return gueltigeAutoId(m[1]);
+  }
+}
+
+// "Standorte" im neuen Aufbau (Auto-ID in Spalte A). Ein Blatt im alten Aufbau (FIN in Spalte A)
+// wird einmalig in "Standorte (alt)" umbenannt und das neue Blatt aus dem Verlauf aufgebaut.
+function standorteBlatt() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const alt = ss.getSheetByName(STANDORTE);
+  if (alt && String(alt.getRange(1, 1).getValue()) !== HEAD_STANDORTE[0]) {
+    let name = STANDORTE + " (alt)";
+    for (let i = 2; ss.getSheetByName(name); i++) name = STANDORTE + " (alt " + i + ")";
+    alt.setName(name);
+    const neu = sheet(STANDORTE, HEAD_STANDORTE);
+    baueStandorteAusVerlauf(neu);
+    return neu;
+  }
+  return sheet(STANDORTE, HEAD_STANDORTE);
+}
+
+function baueStandorteAusVerlauf(standorte) {
+  const verlauf = sheet(VERLAUF, HEAD_VERLAUF);
+  const last = verlauf.getLastRow();
+  if (last < 2) return;
+  const neueste = {};
+  verlauf.getRange(2, 1, last - 1, HEAD_VERLAUF.length).getValues().forEach((r) => {
+    const fin = String(r[1] || "");
+    const lat = numOrEmpty(r[2]);
+    const lng = numOrEmpty(r[3]);
+    if (!fin || lat === "" || lng === "") return;
+    const time = r[5] instanceof Date ? r[5] : new Date(r[5]);
+    if (isNaN(time.getTime())) return;
+    const link = String(r[6] || "");
+    const autoId = gueltigeAutoId(r[8]) || autoIdAusLink(link) || "";
+    const key = schluessel(autoId, fin);
+    if (!neueste[key] || time.getTime() >= neueste[key][5].getTime()) {
+      neueste[key] = [autoId, fin, lat, lng, numOrEmpty(r[4]), time, kartenLink(lat, lng), link];
+    }
+  });
+  const rows = Object.keys(neueste).map((k) => neueste[k]);
+  if (rows.length) standorte.getRange(2, 1, rows.length, HEAD_STANDORTE.length).setValues(rows);
 }
 
 // ---------- Hilfsfunktionen ----------

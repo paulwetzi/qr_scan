@@ -108,7 +108,11 @@ $ohne_autoid = 0;
 $ohne_gps = 0;
 
 foreach ($daten['fahrzeuge'] as $f) {
-    $autoid = gps_sync_autoid_aus_link(isset($f['link']) ? $f['link'] : '');
+    // Auto-ID kommt direkt vom Sheet (eine Zeile pro Auto-ID), sonst aus dem QR-Link
+    $autoid = (isset($f['autoId']) && ctype_digit((string)$f['autoId'])) ? (string)$f['autoId'] : null;
+    if ($autoid === null) {
+        $autoid = gps_sync_autoid_aus_link(isset($f['link']) ? $f['link'] : '');
+    }
     if ($autoid === null) { $ohne_autoid++; continue; }
 
     if (!isset($f['latitude']) || !isset($f['longitude']) || $f['latitude'] === '' || $f['longitude'] === '') {
