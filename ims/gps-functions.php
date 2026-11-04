@@ -144,13 +144,20 @@ function wt_gps_css() {
 	if ($ausgegeben) return;
 	$ausgegeben = true;
 	echo '<style type="text/css">
-.wtgps { position: relative; border: 1px solid grey; overflow: hidden; background: #ddd; }
-.wtgps img { position: absolute; left: 0; top: 0; max-width: none; border: 0;
+/* Fester Rahmen: darf vom umgebenden Layout (Flex, Tabellen, img-Regeln) nicht verformt werden */
+.wtgps-rahmen { display: block !important; float: none !important; flex: 0 0 auto !important;
+	align-self: flex-start !important; text-align: left; }
+.wtgps { position: relative !important; display: block !important; float: none !important;
+	border: 1px solid grey; overflow: hidden !important; background: #ddd; padding: 0 !important; margin: 0 !important;
+	box-sizing: content-box !important; flex: 0 0 auto !important; }
+.wtgps img { position: absolute !important; left: 0 !important; top: 0 !important; max-width: none !important;
+	max-height: none !important; min-width: 0 !important; border: 0 !important; margin: 0 !important; padding: 0 !important;
 	-webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; }
-.wtgps-punkt { position: absolute; width: 16px; height: 16px; margin: -10px 0 0 -10px;
+.wtgps-punkt { position: absolute; display: block; box-sizing: content-box; padding: 0;
+	width: 16px; height: 16px; margin: -10px 0 0 -10px;
 	border-radius: 50%; background: #e00000; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,.7);
 	-webkit-animation: wtgps-blink 1s ease-in-out infinite; animation: wtgps-blink 1s ease-in-out infinite; }
-.wtgps-punkt:after { content: ""; position: absolute; left: -2px; top: -2px; width: 16px; height: 16px;
+.wtgps-punkt:after { content: ""; position: absolute; box-sizing: content-box; left: -2px; top: -2px; width: 16px; height: 16px;
 	border-radius: 50%; border: 2px solid #ff2020;
 	-webkit-animation: wtgps-ring 1.5s ease-out infinite; animation: wtgps-ring 1.5s ease-out infinite; }
 @-webkit-keyframes wtgps-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
@@ -191,15 +198,24 @@ function wt_display_auto_gps($wtgpsmapwidth, $wtgpsmapheight, $wtlatitude, $wtlo
 	$matrix = wt_gps_luftbild_css_matrix($sx, $sy);
 	$src = htmlspecialchars(wt_gps_luftbild_src($wtrelativeurl), ENT_QUOTES);
 
-	echo '<div class="wtgps" style="width:' . (int)$wtgpsmapwidth . 'px;height:' . (int)$wtgpsmapheight . 'px;">';
+	$w = (int)$wtgpsmapwidth;
+	$h = (int)$wtgpsmapheight;
+	$groesse = 'width:' . $w . 'px !important;height:' . $h . 'px !important;'
+		. 'min-width:' . $w . 'px !important;min-height:' . $h . 'px !important;'
+		. 'max-width:' . $w . 'px !important;max-height:' . $h . 'px !important;';
+	$bildgroesse = 'width:' . $a['breite'] . 'px !important;height:' . $a['hoehe'] . 'px !important;';
+
+	echo '<div class="wtgps-rahmen" style="width:' . ($w + 2) . 'px !important;min-width:' . ($w + 2) . 'px !important;">';
+	echo '<div class="wtgps" style="' . $groesse . '">';
 	echo '<img src="' . $src . '" width="' . $a['breite'] . '" height="' . $a['hoehe'] . '" alt="Luftbild Gel&auml;nde"'
-		. ' style="-webkit-transform:' . $matrix . ';-ms-transform:' . $matrix . ';transform:' . $matrix . ';">';
+		. ' style="' . $bildgroesse . '-webkit-transform:' . $matrix . ';-ms-transform:' . $matrix . ';transform:' . $matrix . ';">';
 	echo '<span class="wtgps-punkt" style="left:' . round($p['x'] * $sx) . 'px;top:' . round($p['y'] * $sy) . 'px;"></span>';
 	echo '</div>';
 	if ($scantext != '') {
 		echo '<div class="wtgps-info">' . $scantext . '</div>';
 	}
 	echo '<div class="wtgps-quelle">Luftbild: &copy; Bayerische Vermessungsverwaltung &ndash; www.geodaten.bayern.de, CC BY 4.0</div>';
+	echo '</div>';
 
 	return true;
 }	// function wt_display_auto_gps
