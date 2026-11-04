@@ -25,11 +25,8 @@ define('SCANNER_USERID', 0);
 // true = wie update-geolocation.php nur Positionen auf dem Grundstück übernehmen
 define('NUR_GRUNDSTUECK', true);
 
-// Grenzen des Grundstücks (aus gps-functions.php)
-define('GPS_LAT1',  48.430165);
-define('GPS_LAT2',  48.428068);
-define('GPS_LONG1', 13.321467);
-define('GPS_LONG2', 13.324562);
+// Grenzen des Grundstücks = Bereich der Luftbild-Karte (aus gps-functions.php)
+require_once dirname(__FILE__) . '/gps-functions.php';
 
 // ---------- Zugriff ----------
 
@@ -57,7 +54,7 @@ function gps_sync_autoid_aus_link($link) {
 }
 
 function gps_sync_auf_grundstueck($lat, $lng) {
-    return $lat <= GPS_LAT1 && $lat >= GPS_LAT2 && $lng >= GPS_LONG1 && $lng <= GPS_LONG2;
+    return wt_gps_im_plan(wt_gps_zu_plan($lat, $lng));
 }
 
 // ISO-Zeit (UTC) aus dem Sheet -> lokale Zeit wie im IMS

@@ -30,7 +30,7 @@ Der IMS-Server greift mit `TOKEN` zu (steht nur im Apps Script und in `gps-sync.
 
 ## IMS-Anzeige (Luftbild)
 
-- `ims/gps-functions.php` ersetzt `api/gps-functions.php`: echtes Luftbild statt Zeichnung, blinkender Punkt, darunter „Letzter Scan“. Bestehende Aufrufe funktionieren unverändert.
+- `ims/gps-functions.php` ersetzt `api/gps-functions.php`: echtes Luftbild statt Zeichnung, gerade gestellt wie der bisherige Plan (um ca. 36° gedreht, gleiche Umrechnung wie `ims/gelaende.php`), blinkender Punkt, darunter „Letzter Scan“. Bestehende Aufrufe funktionieren unverändert. Das Bild kommt genordet vom Landesamt und wird im Browser per CSS gedreht.
 - Luftbild: Digitales Orthophoto 20 cm der Bayerischen Vermessungsverwaltung (Open Data, kostenlos, CC BY 4.0 – die Quellenangabe unter dem Bild muss stehen bleiben).
 - `ims/gps-luftbild-laden.php` einmal ausführen → speichert das Bild als `api/img/gps-luftbild.jpg` auf dem IMS-Server. Ohne diese Datei lädt der Browser das Bild direkt vom Landesamt.
 - `ims/ansicht-ausschnitt.php`: neuer Block für die Fahrzeugansicht (übergibt `autos_gpsdaten.datetime` als „Letzter Scan“). Eine neue Datenbankspalte ist dafür nicht nötig.

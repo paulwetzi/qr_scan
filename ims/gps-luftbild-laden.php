@@ -24,7 +24,7 @@ $nl = $ist_cli ? "\n" : "<br>\n";
 
 $ordner = dirname(__FILE__) . '/img';
 $ziel = $ordner . '/gps-luftbild.jpg';
-$url = wt_gps_luftbild_wms_url(1172, 1185);
+$url = wt_gps_luftbild_wms_url();   // genordet, wird bei der Anzeige gerade gedreht
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
