@@ -433,8 +433,7 @@ function showGate(text, showForm) {
 }
 
 function waitForApproval() {
-    showGate("Anfrage gesendet. Warte auf Freigabe … (Admin setzt im Sheet im Blatt „Geräte“ bei „" +
-        GERAET.name + "“ das Häkchen)", false);
+    showGate("Anfrage gesendet. Warte auf Freigabe …", false);
     clearInterval(statusTimer);
     statusTimer = setInterval(checkStatus, 10000);
 }
